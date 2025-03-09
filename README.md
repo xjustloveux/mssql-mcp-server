@@ -41,6 +41,8 @@ DB_DATABASE=your_database_name
 PORT=3333
 TRANSPORT=stdio
 SERVER_URL=http://localhost:3333
+DEBUG=false                     # Set to 'true' for detailed logging (helpful for troubleshooting)
+QUERY_RESULTS_PATH=/path/to/query_results  # Directory where query results will be saved as JSON files
 ```
 
 ### Step 4: Start the Server
@@ -215,3 +217,152 @@ This tool helps you explore all of these without needing to be a SQL expert!
 ## 📝 License
 
 ISC
+
+## 🧠 Guide to Effective AI Prompts for Database Exploration
+
+When working with Claude or other AI assistants through this MCP server, the way you phrase your requests significantly impacts the results. Here's how to help the AI use the database tools effectively:
+
+### Essential Commands for AI Database Interaction
+
+The AI can use these MCP commands when prompted properly:
+
+#### 1. Database Discovery
+```javascript
+mcp__discover_database()
+```
+**When to suggest:** Start with this when the AI is unfamiliar with your database.
+**Example prompt:** "Use the discover database tool to see what tables are available."
+
+#### 2. Table Details
+```javascript
+mcp__table_details({ tableName: "YourTableName" })
+```
+**When to suggest:** When focusing on a specific table.
+**Example prompt:** "Check the structure of the Orders table before querying it."
+
+#### 3. Query Execution
+```javascript
+mcp__execute_query({ 
+  sql: "SELECT * FROM YourTable WHERE Condition", 
+  returnResults: true 
+})
+```
+**When to suggest:** When you want to see query results directly in the conversation.
+**Example prompt:** "Run a query to show me the most recent orders, and display the results here."
+
+### Effective Prompting Patterns
+
+#### Start with Structure, Then Query
+```
+First, discover what tables exist in my database. Then, look at the structure
+of the Customers table. Finally, show me the top 10 customers by total purchase amount.
+```
+
+#### Guide the AI Through Complex Analysis
+```
+I need to analyze our sales data. First, check the structure of the Sales and Products tables.
+Then, write a query that shows monthly sales totals by product category for the last quarter.
+```
+
+#### Ask for Explanations
+```
+Query the top 5 underperforming products based on sales vs. forecasts,
+and explain your approach to writing this query.
+```
+
+### Advanced MCP Features
+
+#### Viewing Large Result Sets
+For large query results, the server saves them as JSON files. The AI will provide a UUID to access these results.
+
+```javascript
+mcp__get_query_results({ uuid: "provided-uuid-here" })
+```
+**Example prompt:** "Use the UUID from the previous query to show me the first 20 rows of that result set."
+
+#### Generating Complex Queries
+```
+Help me create a query that shows customer retention rates by month, comparing
+new vs. returning customers as a percentage of total sales.
+```
+
+#### Combining Multiple Tables
+```
+I need to analyze data across multiple tables. First, check the structure of
+Orders, OrderDetails, and Products tables. Then create a query that shows
+our top-selling products by revenue for each geographical region.
+```
+
+### Troubleshooting Through Prompts
+
+If the AI is struggling with a database task, try these approaches:
+
+1. **Be more specific about tables:** "Before writing that query, please check if the CustomerOrders table exists and what columns it has."
+
+2. **Break complex tasks into steps:** "Let's approach this step by step. First, look at the Products table structure. Then, check the Orders table..."
+
+3. **Ask for intermediate results:** "Run a simple query on that table first so we can verify the data format before trying more complex analysis."
+
+4. **Request query explanations:** "After writing this query, explain what each part does so I can verify it's doing what I need."
+
+## ⚙️ Environment Configuration Explained
+
+The `.env` file controls how the MS SQL MCP Server connects to your database and operates. Here's a detailed explanation of each setting:
+
+```
+# Database Connection Settings
+DB_USER=your_username           # SQL Server username
+DB_PASSWORD=your_password       # SQL Server password
+DB_SERVER=your_server_name      # Server hostname or IP address (example: localhost, 10.0.0.1, myserver.database.windows.net)
+DB_DATABASE=your_database_name  # Name of the database to connect to
+
+# Server Configuration
+PORT=3333                       # Port for the HTTP/SSE server to listen on
+TRANSPORT=stdio                 # Connection method: 'stdio' (for Claude Desktop) or 'sse' (for network connections)
+SERVER_URL=http://localhost:3333 # Base URL when using SSE transport (must match your PORT setting)
+
+# Advanced Settings
+DEBUG=false                     # Set to 'true' for detailed logging (helpful for troubleshooting)
+QUERY_RESULTS_PATH=/path/to/query_results  # Directory where query results will be saved as JSON files
+```
+
+### Connection Types Explained
+
+#### stdio Transport
+- Use when connecting directly with Claude Desktop
+- Communication happens through standard input/output streams
+- Set `TRANSPORT=stdio` in your .env file
+- Run with `npm start`
+
+#### HTTP/SSE Transport
+- Use when connecting over a network (like with Cursor IDE)
+- Uses Server-Sent Events (SSE) for real-time communication
+- Set `TRANSPORT=sse` in your .env file
+- Configure `SERVER_URL` to match your server address
+- Run with `npm run start:sse`
+
+### SQL Server Connection Examples
+
+#### Local SQL Server
+```
+DB_USER=sa
+DB_PASSWORD=YourStrongPassword
+DB_SERVER=localhost
+DB_DATABASE=AdventureWorks
+```
+
+#### Azure SQL Database
+```
+DB_USER=azure_admin@myserver
+DB_PASSWORD=YourStrongPassword
+DB_SERVER=myserver.database.windows.net
+DB_DATABASE=AdventureWorks
+```
+
+### Query Results Storage
+
+Query results are saved as JSON files in the directory specified by `QUERY_RESULTS_PATH`. This prevents large result sets from overwhelming the conversation. You can:
+
+- Leave this blank to use the default `query-results` directory in the project
+- Set a custom path like `/Users/username/Documents/query-results`
+- Access saved results using the provided UUID in the tool response
