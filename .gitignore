@@ -138,6 +138,24 @@ dist
 .specstory/.gitignore
 .specstory/.gitignore
 
-./query_results
-./query_results/*
-./query_results/*.json
+query_results
+query_results/*
+query_results/*.json
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Query results
+query-results/*.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
