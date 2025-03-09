@@ -130,6 +130,51 @@ Connect this tool directly to Claude Desktop in a few easy steps:
 4. Restart Claude Desktop
 5. Look for the tools icon in Claude Desktop - you can now use database commands directly!
 
+## 🔌 Connecting with Cursor IDE
+
+Cursor is an AI-powered code editor that can leverage this tool for advanced database interactions. Here's how to set it up:
+
+### Setup in Cursor
+
+1. Open Cursor IDE (download from [cursor.sh](https://cursor.sh) if you don't have it)
+2. Start the MS SQL MCP Server using the HTTP/SSE transport:
+   ```bash
+   npm run start:sse
+   ```
+3. Create a new workspace or open an existing project in Cursor
+4. Enter Cursor Settings
+5. Click MCP
+6. Add new MCP server
+7. Name your MCP server, select type: sse
+8. Enter server URL as: localhost:3333/sse (or the port you have it running on)
+
+
+### Using Database Commands in Cursor
+
+Once connected, you can use MCP commands directly in Cursor's AI chat:
+
+1. Ask Claude in Cursor to explore your database:
+   ```
+   Can you show me the tables in my database?
+   ```
+
+2. Execute specific queries:
+   ```
+   Query the top 10 records from the Customers table
+   ```
+
+3. Generate and run complex queries:
+   ```
+   Find all orders from the last month with a value over $1000
+   ```
+
+### Troubleshooting Cursor Connection
+
+- Make sure the MS SQL MCP Server is running with the HTTP/SSE transport
+- Check that the port is correct and matches what's in your .env file
+- Ensure your firewall isn't blocking the connection
+- If using a different IP/hostname, update the SERVER_URL in your .env file
+
 ## 🛡️ Security Features
 
 - **Read-only by default**: No risk of data modification
