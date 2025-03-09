@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "uuid": "5c03a29a-611c-4c7d-b470-36b0bbac3ebb",
+    "timestamp": "2025-03-09T18:40:19.852Z",
+    "query": "SELECT TOP 1 * FROM tagnet_AppointmentSPN_ETA",
+    "rowCount": 1,
+    "executionTimeMs": 0
+  },
+  "results": [
+    {
+      "RecID": "FF352A89-61DB-4874-BB7A-00000322C172",
+      "PartnerPrimaryOrderID": "208U1202473",
+      "LoadID": "T230210-00036",
+      "Scan": "Load",
+      "LaneA": "OK001TX099",
+      "EstimatedDepartA": "2023-02-15T09:45:40.000Z",
+      "ActualDepartA": null,
+      "TransitDaysA": 1,
+      "ArrivalDateA": "2023-02-16T00:00:00.000Z",
+      "LaneB": "GA099NC012",
+      "EstimatedDepartB": "2023-02-23T00:00:00.000Z",
+      "ActualDepartB": null,
+      "TransitDaysB": 1,
+      "ArrivalDateB": "2023-02-24T00:00:00.000Z",
+      "CreatedAt": "2023-02-15T08:51:22.553Z",
+      "AlertEmailSent": false,
+      "MissingUpdatedETA": null
+    }
+  ]
+}

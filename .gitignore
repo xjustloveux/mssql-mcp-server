@@ -128,3 +128,16 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+.specstory
+.specstory/*
+.specstory/.DS_Store
+.specstory/.idea
+.specstory/.vscode
+.specstory/.git
+.specstory/.gitignore
+.specstory/.gitignore
+
+./query_results
+./query_results/*
+./query_results/*.json

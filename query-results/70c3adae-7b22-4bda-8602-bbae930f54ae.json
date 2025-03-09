@@ -1,0 +1,311 @@
+{
+  "metadata": {
+    "uuid": "70c3adae-7b22-4bda-8602-bbae930f54ae",
+    "timestamp": "2025-03-09T18:39:53.268Z",
+    "query": "SELECT TOP 100 TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'",
+    "rowCount": 100,
+    "executionTimeMs": 0
+  },
+  "results": [
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_ETA"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_eDEMANDResponses"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL25"
+    },
+    {
+      "TABLE_NAME": "tagnet_Catamaran_OrderAttributes"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentDispatchSPN_EventWindows"
+    },
+    {
+      "TABLE_NAME": "tagnet_SKUUPCLookUp"
+    },
+    {
+      "TABLE_NAME": "YRC-AR_5-27"
+    },
+    {
+      "TABLE_NAME": "ZoneO"
+    },
+    {
+      "TABLE_NAME": "QuoteFrtClubTransportation12192019"
+    },
+    {
+      "TABLE_NAME": "partners_x_group"
+    },
+    {
+      "TABLE_NAME": "tagnet_HomeDirect_AccrualReconcileUploadBatches"
+    },
+    {
+      "TABLE_NAME": "DTD"
+    },
+    {
+      "TABLE_NAME": "tagnet_User2Partner"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_InventorySavedData"
+    },
+    {
+      "TABLE_NAME": "tagnet_ManagedFacilities_OrderTypes"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNRating_Base_Weight_Archive_9_12_18"
+    },
+    {
+      "TABLE_NAME": "tagnet_Amazon_DriverForm"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_eDEMANDSurveys"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNOE_BlockedPartnerIds"
+    },
+    {
+      "TABLE_NAME": "tagnet_TwilioServicesAutomationReadyToScheduleCallCount"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_State2State_ServiceLevel_Minimum"
+    },
+    {
+      "TABLE_NAME": "tagnet_IDPInvoiceGLCodes"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL18"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_MissingOrderExclusionList"
+    },
+    {
+      "TABLE_NAME": "tagnet_ServiceTypeExceptionReport_Rules"
+    },
+    {
+      "TABLE_NAME": "Edi_FileBasedCustomerConfiguration"
+    },
+    {
+      "TABLE_NAME": "POD_Report_Jay"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNRating_Beyond_Mileage"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_Transportation2021"
+    },
+    {
+      "TABLE_NAME": "tagnet_HomeDirect_EventLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_Cubiscan_PartnersEnabled"
+    },
+    {
+      "TABLE_NAME": "tagnet_commission_ByVehicleLOCKED"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_FirstFinalMile2021"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_LoadScanPhotoByServiceProviderID"
+    },
+    {
+      "TABLE_NAME": "AdditionalTimeReasons"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_Zip2zip"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL8"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_Order2Parameter"
+    },
+    {
+      "TABLE_NAME": "tagnet_VOIPX_CustomersToMakeIVRCallsFor"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNRating_Base_Weight_Testing_9_12_18"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_EventQueue"
+    },
+    {
+      "TABLE_NAME": "user_x_group"
+    },
+    {
+      "TABLE_NAME": "DriverHelperInformation"
+    },
+    {
+      "TABLE_NAME": "tagnet_HomeDirect_AccrualReconcileLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_ItemCrossdockScans"
+    },
+    {
+      "TABLE_NAME": "tagnet_HomeDirect_ImportantFieldWatchList"
+    },
+    {
+      "TABLE_NAME": "tagnet_IDPJobsToBeInvoiced"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL13"
+    },
+    {
+      "TABLE_NAME": "tagnet_RunwaySchedule_DeliveryWindows"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNDoiReportSnapshots"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL19"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_ScanningPreProcess"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_IsolatedZip"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_FIFOItems"
+    },
+    {
+      "TABLE_NAME": "tagnet_DockSearchLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_commission_CustomerAccountsUsingDriverBook"
+    },
+    {
+      "TABLE_NAME": "sysarticles"
+    },
+    {
+      "TABLE_NAME": "2021_2022_FIT"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_REExclusionList"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_Weight"
+    },
+    {
+      "TABLE_NAME": "tagnet_COPS_OrderNoteColors"
+    },
+    {
+      "TABLE_NAME": "LoadManifestEmailTracking"
+    },
+    {
+      "TABLE_NAME": "tagnet_Dania_CustomerNumbers"
+    },
+    {
+      "TABLE_NAME": "2021_unbilled_in_2021V4_WithQuote"
+    },
+    {
+      "TABLE_NAME": "DriverToHelperInfo"
+    },
+    {
+      "TABLE_NAME": "tagnet_Catamaran_LinkedOrders"
+    },
+    {
+      "TABLE_NAME": "tagnet_Touchstar_CustomersToMakeIVRCallsFor"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_LoadConsolidationExclusionList"
+    },
+    {
+      "TABLE_NAME": "tagnet_ManualPayHold_CustomerAccounts"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNRating_Base_Weight_Current"
+    },
+    {
+      "TABLE_NAME": "tagnetPro_Trigger20_LoadQuotes"
+    },
+    {
+      "TABLE_NAME": "sysarticlecolumns"
+    },
+    {
+      "TABLE_NAME": "tagnet_ErrorLogSubmissions"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNRating_FSC"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_ShipperReturnSPCodes"
+    },
+    {
+      "TABLE_NAME": "tagnet_UserPermissionTemplates"
+    },
+    {
+      "TABLE_NAME": "tagnet_eCourier_SaveOrderMessages"
+    },
+    {
+      "TABLE_NAME": "tagnet_UserFilterSourceID"
+    },
+    {
+      "TABLE_NAME": "tagnet_commission_FuelReimbursement"
+    },
+    {
+      "TABLE_NAME": "tagnet_Gloria_ScanRequestLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_OrderStatusSummary_EventLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_PartnerMovementEventCodes"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_FreightMovements"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_OrderNotes"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNQuoting_BeyondByZip"
+    },
+    {
+      "TABLE_NAME": "tagnet_PODAutomation_AuditLog"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_QtyLookupByPartnerSku"
+    },
+    {
+      "TABLE_NAME": "tagnet_SpeculativeJobCommissions"
+    },
+    {
+      "TABLE_NAME": "tagnet_Dania_FreightReconcileOverrides"
+    },
+    {
+      "TABLE_NAME": "tagnet_FaxProc_ReceivedMessageAttachments"
+    },
+    {
+      "TABLE_NAME": "FRT_INTRNST_BILL_31"
+    },
+    {
+      "TABLE_NAME": "DriverHelperPhotos"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_OrderStatusMapByEvent"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_OrderMovementEvents"
+    },
+    {
+      "TABLE_NAME": "tagnet_SPNCustomerActionNotes"
+    },
+    {
+      "TABLE_NAME": "sysschemaarticles"
+    },
+    {
+      "TABLE_NAME": "QuoteImportModwayFirstAndFinal"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_PartnerFreightItemLookup"
+    },
+    {
+      "TABLE_NAME": "tagnet_OrderStatusSummary_Recipients"
+    },
+    {
+      "TABLE_NAME": "tagnet_AppointmentSPN_ServiceProviders"
+    }
+  ]
+}
