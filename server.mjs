@@ -97,6 +97,7 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'YourStrong@Passw0rd',
     server: process.env.DB_SERVER || 'localhost',
     database: process.env.DB_DATABASE || 'master',
+    port: parseInt(process.env.DB_PORT) || 1433, // Add the port from env with fallback to default
     options: {
         encrypt: true, // For Azure
         trustServerCertificate: true // Change to false in production
@@ -108,6 +109,7 @@ console.log('📊 Database configuration:');
 console.log(`   Server: ${dbConfig.server}`);
 console.log(`   Database: ${dbConfig.database}`);
 console.log(`   User: ${dbConfig.user}`);
+console.log(`   Port: ${dbConfig.port}`); // Log the port as well
 
 // Create SQL client
 const sqlClient = createSqlClient(dbConfig);

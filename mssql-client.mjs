@@ -10,6 +10,7 @@ const config = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     server: process.env.DB_SERVER,
+    port: parseInt(process.env.DB_PORT) || 1433,
     database: process.env.DB_NAME,
     options: {
         encrypt: process.env.DB_ENCRYPT === 'true',
@@ -113,6 +114,12 @@ export { sql };
  * @returns {Object} SQL Server client
  */
 export function createSqlClient(dbConfig) {
+    // Ensure port is properly set from the provided config or environment
+    const finalConfig = {
+        ...dbConfig,
+        port: dbConfig.port || parseInt(process.env.DB_PORT) || 1433
+    };
+    
     return {
         /**
          * Execute a query against MS SQL Server
@@ -121,7 +128,7 @@ export function createSqlClient(dbConfig) {
          */
         executeQuery: async (sqlQuery) => {
             try {
-                const pool = await sql.connect(dbConfig);
+                const pool = await sql.connect(finalConfig);
                 try {
                     console.log(`Executing SQL: ${sqlQuery.substring(0, 100)}${sqlQuery.length > 100 ? '...' : ''}`);
                     const result = await pool.request().query(sqlQuery);
@@ -141,7 +148,7 @@ export function createSqlClient(dbConfig) {
          */
         getTables: async () => {
             try {
-                const pool = await sql.connect(dbConfig);
+                const pool = await sql.connect(finalConfig);
                 try {
                     const result = await pool.request().query(`
                         SELECT 
@@ -168,7 +175,7 @@ export function createSqlClient(dbConfig) {
          */
         getSchema: async () => {
             try {
-                const pool = await sql.connect(dbConfig);
+                const pool = await sql.connect(finalConfig);
                 try {
                     const result = await pool.request().query(`
                         SELECT 
