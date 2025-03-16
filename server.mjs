@@ -109,7 +109,6 @@ console.log('📊 Database configuration:');
 console.log(`   Server: ${dbConfig.server}`);
 console.log(`   Database: ${dbConfig.database}`);
 console.log(`   User: ${dbConfig.user}`);
-console.log(`   Port: ${dbConfig.port}`); // Log the port as well
 
 // Create SQL client
 const sqlClient = createSqlClient(dbConfig);

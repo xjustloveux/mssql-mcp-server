@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+      "mssql": {
+        "url": "localhost:3333/sse"
+      }
+    }
+  }
+  
