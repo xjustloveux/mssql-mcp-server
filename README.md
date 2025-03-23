@@ -1,4 +1,4 @@
-# MS SQL MCP Server
+# MS SQL MCP Server 1.1
 
 An easy-to-use bridge that lets AI assistants like Claude directly query and explore Microsoft SQL Server databases. No coding experience required!
 
