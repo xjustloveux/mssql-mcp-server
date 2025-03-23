@@ -10,6 +10,25 @@ This tool allows AI assistants to:
 3. **Execute** read-only SQL queries safely
 4. **Generate** SQL queries from natural language requests
 
+## 🌟 Why You Need This Tool
+
+### Bridge the Gap Between Your Data and AI
+- **No Coding Required**: Give Claude and other AI assistants direct access to your SQL Server databases without writing complex integration code
+- **Maintain Control**: All queries are read-only by default, ensuring your data remains safe
+- **Private & Secure**: Your database credentials stay local and are never sent to external services
+
+### Practical Benefits
+- **Save Hours of Manual Work**: No more copy-pasting data or query results to share with AI
+- **Deeper Analysis**: AI can navigate your entire database schema and provide insights across multiple tables
+- **Natural Language Interface**: Ask questions about your data in plain English
+- **End the Context Limit Problem**: Access large datasets that would exceed normal AI context windows
+
+### Perfect For
+- **Data Analysts** who want AI help interpreting SQL data without sharing credentials
+- **Developers** looking for a quick way to explore database structure through natural conversation
+- **Business Analysts** who need insights without SQL expertise
+- **Database Administrators** who want to provide controlled access to AI tools
+
 ## 🚀 Quick Start Guide
 
 ### Step 1: Install Prerequisites
@@ -64,37 +83,75 @@ npm run client
 
 1. **Explore your database structure without writing SQL**
    ```javascript
-   mcp__discover_database()
+   mcp_SQL_mcp_discover_database()
    ```
 
 2. **Get detailed information about a specific table**
    ```javascript
-   mcp__table_details({ tableName: "Customers" })
+   mcp_SQL_mcp_table_details({ tableName: "Customers" })
    ```
 
 3. **Run a safe query**
    ```javascript
-   mcp__execute_query({ sql: "SELECT TOP 10 * FROM Customers" })
+   mcp_SQL_mcp_execute_query({ sql: "SELECT TOP 10 * FROM Customers", returnResults: true })
    ```
 
-4. **Ask natural language questions**
+4. **Find tables by name pattern**
+   ```javascript
+   mcp_SQL_mcp_discover_tables({ namePattern: "%user%" })
+   ```
+
+5. **Use pagination to navigate large result sets**
+   ```javascript
+   // First page
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT * FROM Users ORDER BY Username OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", 
+     returnResults: true 
+   })
+   
+   // Next page
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT * FROM Users ORDER BY Username OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY", 
+     returnResults: true 
+   })
+   ```
+
+6. **Cursor-based pagination for optimal performance**
+   ```javascript
+   // First page
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT TOP 10 * FROM Users ORDER BY Username", 
+     returnResults: true 
+   })
+   
+   // Next page using the last value as cursor
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT TOP 10 * FROM Users WHERE Username > 'last_username' ORDER BY Username", 
+     returnResults: true 
+   })
+   ```
+
+7. **Ask natural language questions**
    ```
    "Show me the top 5 customers with the most orders in the last month"
    ```
 
-## 🔄 Transport Methods Explained
+## 💡 Real-World Applications
 
-### Option 1: stdio Transport (Default)
-Best for: Using directly with Claude Desktop or the bundled client
-```bash
-npm start
-```
+### For Business Intelligence
+- **Sales Performance Analysis**: "Show me monthly sales trends for the past year and identify our top-performing products by region."
+- **Customer Segmentation**: "Analyze our customer base by purchase frequency, average order value, and geographical location."
+- **Financial Reporting**: "Create a quarterly profit and loss report comparing this year to last year."
 
-### Option 2: HTTP/SSE Transport
-Best for: Network access or when used with web applications
-```bash
-npm run start:sse
-```
+### For Database Management
+- **Schema Optimization**: "Help me identify tables with missing indexes by examining query performance data."
+- **Data Quality Auditing**: "Find all customer records with incomplete information or invalid values."
+- **Usage Analysis**: "Show me which tables are most frequently accessed and what queries are most resource-intensive."
+
+### For Development
+- **API Exploration**: "I'm building an API - help me analyze the database schema to design appropriate endpoints."
+- **Query Optimization**: "Review this complex query and suggest performance improvements."
+- **Database Documentation**: "Create comprehensive documentation of our database structure with explanations of relationships."
 
 ## 🖥️ Interactive Client Features
 
@@ -107,7 +164,198 @@ The bundled client provides an easy menu-driven interface:
 5. **Read database schema** - See all tables and their relationships
 6. **Generate SQL query** - Convert natural language to SQL
 
-## 🔗 Claude Desktop Integration
+## 🧠 Effective Prompting & Tool Usage Guide
+
+When working with Claude or other AI assistants through this MCP server, the way you phrase your requests significantly impacts the results. Here's how to help the AI use the database tools effectively:
+
+### Basic Tool Call Format
+
+When prompting an AI to use this tool, follow this structure:
+
+```
+Can you use the SQL MCP tools to [your goal]?
+
+For example:
+- Check what tables exist in my database
+- Query the Customers table and show me the first 10 records
+- Find all orders from the past month
+```
+
+### Essential Commands & Syntax
+
+Here are the main tools and their correct syntax:
+
+```javascript
+// Discover the database structure
+mcp_SQL_mcp_discover_database()
+
+// Get detailed information about a specific table
+mcp_SQL_mcp_table_details({ tableName: "YourTableName" })
+
+// Execute a query and return results
+mcp_SQL_mcp_execute_query({ 
+  sql: "SELECT * FROM YourTable WHERE Condition", 
+  returnResults: true 
+})
+
+// Find tables by name pattern
+mcp_SQL_mcp_discover_tables({ namePattern: "%pattern%" })
+
+// Access saved query results (for large result sets)
+mcp_SQL_mcp_get_query_results({ uuid: "provided-uuid-here" })
+```
+
+**When to use each tool:**
+- **Database Discovery**: Start with this when the AI is unfamiliar with your database structure.
+- **Table Details**: Use when focusing on a specific table before writing queries.
+- **Query Execution**: When you need to retrieve or analyze actual data.
+- **Table Discovery by Pattern**: When looking for tables related to a specific domain.
+
+### Effective Prompting Patterns
+
+#### Step-by-Step Workflows
+For complex tasks, guide the AI through a series of steps:
+
+```
+I'd like to analyze our sales data. Please:
+1. First use mcp_SQL_mcp_discover_tables to find tables related to sales
+2. Use mcp_SQL_mcp_table_details to examine the structure of relevant tables
+3. Create a query with mcp_SQL_mcp_execute_query that shows monthly sales by product category
+```
+
+#### Structure First, Then Query
+```
+First, discover what tables exist in my database. Then, look at the structure
+of the Customers table. Finally, show me the top 10 customers by total purchase amount.
+```
+
+#### Ask for Explanations
+```
+Query the top 5 underperforming products based on sales vs. forecasts,
+and explain your approach to writing this query.
+```
+
+### SQL Server Dialect Notes
+
+Remind the AI about SQL Server's specific syntax:
+
+```
+Please use SQL Server syntax for pagination:
+- For offset/fetch: "OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY"
+- For cursor-based: "WHERE ID > last_id ORDER BY ID"
+```
+
+### Correcting Tool Usage
+
+If the AI uses incorrect syntax, you can help it with:
+
+```
+That's not quite right. Please use this format for the tool call:
+mcp_SQL_mcp_execute_query({ 
+  sql: "SELECT * FROM Customers WHERE Region = 'West'",
+  returnResults: true
+})
+```
+
+### Troubleshooting Through Prompts
+
+If the AI is struggling with a database task, try these approaches:
+
+1. **Be more specific about tables:** "Before writing that query, please check if the CustomerOrders table exists and what columns it has."
+
+2. **Break complex tasks into steps:** "Let's approach this step by step. First, look at the Products table structure. Then, check the Orders table..."
+
+3. **Ask for intermediate results:** "Run a simple query on that table first so we can verify the data format before trying more complex analysis."
+
+4. **Request query explanations:** "After writing this query, explain what each part does so I can verify it's doing what I need."
+
+## 🔎 Advanced Query Capabilities
+
+### Table Discovery & Exploration
+
+The MCP Server provides powerful tools for exploring your database structure:
+
+- **Pattern-based table discovery**: Find tables matching specific patterns
+  ```javascript
+  mcp_SQL_mcp_discover_tables({ namePattern: "%order%" })
+  ```
+
+- **Schema overview**: Get a high-level view of tables by schema
+  ```javascript
+  mcp_SQL_mcp_execute_query({ 
+    sql: "SELECT TABLE_SCHEMA, COUNT(*) AS TableCount FROM INFORMATION_SCHEMA.TABLES GROUP BY TABLE_SCHEMA" 
+  })
+  ```
+
+- **Column exploration**: Examine column metadata for any table
+  ```javascript
+  mcp_SQL_mcp_table_details({ tableName: "dbo.Users" })
+  ```
+
+### Pagination Techniques
+
+The server supports multiple pagination methods for handling large datasets:
+
+1. **Offset/Fetch Pagination**: Standard SQL pagination using OFFSET and FETCH
+   ```javascript
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT * FROM Users ORDER BY Username OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY" 
+   })
+   ```
+
+2. **Cursor-Based Pagination**: More efficient for large datasets
+   ```javascript
+   // Get first page
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT TOP 10 * FROM Users ORDER BY Username" 
+   })
+   
+   // Get next page using last value as cursor
+   mcp_SQL_mcp_execute_query({ 
+     sql: "SELECT TOP 10 * FROM Users WHERE Username > 'last_username' ORDER BY Username" 
+   })
+   ```
+
+3. **Count with Data**: Retrieve total count alongside paginated data
+   ```javascript
+   mcp_SQL_mcp_execute_query({ 
+     sql: "WITH TotalCount AS (SELECT COUNT(*) AS Total FROM Users) SELECT TOP 10 u.*, t.Total FROM Users u CROSS JOIN TotalCount t ORDER BY Username" 
+   })
+   ```
+
+### Complex Joins & Relationships
+
+Explore relationships between tables with join operations:
+
+```javascript
+mcp_SQL_mcp_execute_query({ 
+  sql: "SELECT u.Username, u.Email, r.RoleName FROM Users u JOIN UserRoles ur ON u.Username = ur.Username JOIN Roles r ON ur.RoleId = r.RoleId ORDER BY u.Username"
+})
+```
+
+### Analytical Queries
+
+Run aggregations and analytical queries to gain insights:
+
+```javascript
+mcp_SQL_mcp_execute_query({ 
+  sql: "SELECT UserType, COUNT(*) AS UserCount, SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsers FROM Users GROUP BY UserType"
+})
+```
+
+### Using SQL Server Features
+
+The MCP server supports SQL Server-specific features:
+
+- **Common Table Expressions (CTEs)**
+- **Window functions**
+- **JSON operations**
+- **Hierarchical queries**
+- **Full-text search** (when configured in your database)
+
+## 🔗 Integration Options
+
+### Claude Desktop Integration
 
 Connect this tool directly to Claude Desktop in a few easy steps:
 
@@ -132,11 +380,11 @@ Connect this tool directly to Claude Desktop in a few easy steps:
 4. Restart Claude Desktop
 5. Look for the tools icon in Claude Desktop - you can now use database commands directly!
 
-## 🔌 Connecting with Cursor IDE
+### Connecting with Cursor IDE
 
 Cursor is an AI-powered code editor that can leverage this tool for advanced database interactions. Here's how to set it up:
 
-### Setup in Cursor
+#### Setup in Cursor
 
 1. Open Cursor IDE (download from [cursor.sh](https://cursor.sh) if you don't have it)
 2. Start the MS SQL MCP Server using the HTTP/SSE transport:
@@ -150,8 +398,7 @@ Cursor is an AI-powered code editor that can leverage this tool for advanced dat
 7. Name your MCP server, select type: sse
 8. Enter server URL as: localhost:3333/sse (or the port you have it running on)
 
-
-### Using Database Commands in Cursor
+#### Using Database Commands in Cursor
 
 Once connected, you can use MCP commands directly in Cursor's AI chat:
 
@@ -170,12 +417,26 @@ Once connected, you can use MCP commands directly in Cursor's AI chat:
    Find all orders from the last month with a value over $1000
    ```
 
-### Troubleshooting Cursor Connection
+#### Troubleshooting Cursor Connection
 
 - Make sure the MS SQL MCP Server is running with the HTTP/SSE transport
 - Check that the port is correct and matches what's in your .env file
 - Ensure your firewall isn't blocking the connection
 - If using a different IP/hostname, update the SERVER_URL in your .env file
+
+## 🔄 Transport Methods Explained
+
+### Option 1: stdio Transport (Default)
+Best for: Using directly with Claude Desktop or the bundled client
+```bash
+npm start
+```
+
+### Option 2: HTTP/SSE Transport
+Best for: Network access or when used with web applications
+```bash
+npm run start:sse
+```
 
 ## 🛡️ Security Features
 
@@ -214,96 +475,63 @@ If you're new to SQL Server, here are some key concepts:
 
 This tool helps you explore all of these without needing to be a SQL expert!
 
-## 📝 License
+## 🏗️ Architecture & Core Modules
 
-ISC
+The MS SQL MCP Server is built with a modular architecture that separates concerns for maintainability and extensibility:
 
-## 🧠 Guide to Effective AI Prompts for Database Exploration
+### Core Modules
 
-When working with Claude or other AI assistants through this MCP server, the way you phrase your requests significantly impacts the results. Here's how to help the AI use the database tools effectively:
+#### `database.mjs` - Database Connectivity
+- Manages SQL Server connection pooling
+- Provides query execution with retry logic and error handling
+- Handles database connections, transactions, and configuration
+- Includes utilities for sanitizing SQL and formatting errors
 
-### Essential Commands for AI Database Interaction
+#### `tools.mjs` - Tool Registration
+- Registers all database tools with the MCP server
+- Implements tool validation and parameter checking
+- Provides core functionality for SQL queries, table exploration, and database discovery
+- Maps tool calls to database operations
 
-The AI can use these MCP commands when prompted properly:
+#### `resources.mjs` - Database Resources
+- Exposes database metadata through resource endpoints
+- Provides schema information, table listings, and procedure documentation
+- Formats database structure information for AI consumption
+- Includes discovery utilities for database exploration
 
-#### 1. Database Discovery
-```javascript
-mcp__discover_database()
-```
-**When to suggest:** Start with this when the AI is unfamiliar with your database.
-**Example prompt:** "Use the discover database tool to see what tables are available."
+#### `pagination.mjs` - Results Navigation
+- Implements cursor-based pagination for large result sets
+- Provides utilities for generating next/previous page cursors
+- Transforms SQL queries to support pagination
+- Handles SQL Server's OFFSET/FETCH pagination syntax
 
-#### 2. Table Details
-```javascript
-mcp__table_details({ tableName: "YourTableName" })
-```
-**When to suggest:** When focusing on a specific table.
-**Example prompt:** "Check the structure of the Orders table before querying it."
+#### `errors.mjs` - Error Handling
+- Defines custom error types for different failure scenarios
+- Implements JSON-RPC error formatting
+- Provides human-readable error messages
+- Includes middleware for global error handling
 
-#### 3. Query Execution
-```javascript
-mcp__execute_query({ 
-  sql: "SELECT * FROM YourTable WHERE Condition", 
-  returnResults: true 
-})
-```
-**When to suggest:** When you want to see query results directly in the conversation.
-**Example prompt:** "Run a query to show me the most recent orders, and display the results here."
+#### `logger.mjs` - Logging System
+- Configures Winston logging with multiple transports
+- Provides context-aware request logging
+- Handles log rotation and formatting
+- Captures uncaught exceptions and unhandled rejections
 
-### Effective Prompting Patterns
+### How These Modules Work Together
 
-#### Start with Structure, Then Query
-```
-First, discover what tables exist in my database. Then, look at the structure
-of the Customers table. Finally, show me the top 10 customers by total purchase amount.
-```
+1. When a tool call is received, the MCP server routes it to the appropriate handler in `tools.mjs`
+2. The tool handler validates parameters and constructs a database query
+3. The query is executed via functions in `database.mjs`, with possible pagination from `pagination.mjs`
+4. Results are formatted and returned to the client
+5. Any errors are caught and processed through `errors.mjs`
+6. All operations are logged via `logger.mjs`
 
-#### Guide the AI Through Complex Analysis
-```
-I need to analyze our sales data. First, check the structure of the Sales and Products tables.
-Then, write a query that shows monthly sales totals by product category for the last quarter.
-```
-
-#### Ask for Explanations
-```
-Query the top 5 underperforming products based on sales vs. forecasts,
-and explain your approach to writing this query.
-```
-
-### Advanced MCP Features
-
-#### Viewing Large Result Sets
-For large query results, the server saves them as JSON files. The AI will provide a UUID to access these results.
-
-```javascript
-mcp__get_query_results({ uuid: "provided-uuid-here" })
-```
-**Example prompt:** "Use the UUID from the previous query to show me the first 20 rows of that result set."
-
-#### Generating Complex Queries
-```
-Help me create a query that shows customer retention rates by month, comparing
-new vs. returning customers as a percentage of total sales.
-```
-
-#### Combining Multiple Tables
-```
-I need to analyze data across multiple tables. First, check the structure of
-Orders, OrderDetails, and Products tables. Then create a query that shows
-our top-selling products by revenue for each geographical region.
-```
-
-### Troubleshooting Through Prompts
-
-If the AI is struggling with a database task, try these approaches:
-
-1. **Be more specific about tables:** "Before writing that query, please check if the CustomerOrders table exists and what columns it has."
-
-2. **Break complex tasks into steps:** "Let's approach this step by step. First, look at the Products table structure. Then, check the Orders table..."
-
-3. **Ask for intermediate results:** "Run a simple query on that table first so we can verify the data format before trying more complex analysis."
-
-4. **Request query explanations:** "After writing this query, explain what each part does so I can verify it's doing what I need."
+This architecture ensures:
+- Clean separation of concerns
+- Consistent error handling
+- Comprehensive logging
+- Efficient database connection management
+- Scalable query execution
 
 ## ⚙️ Environment Configuration Explained
 
@@ -366,3 +594,7 @@ Query results are saved as JSON files in the directory specified by `QUERY_RESUL
 - Leave this blank to use the default `query-results` directory in the project
 - Set a custom path like `/Users/username/Documents/query-results`
 - Access saved results using the provided UUID in the tool response
+
+## 📝 License
+
+ISC
