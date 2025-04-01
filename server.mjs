@@ -43,6 +43,7 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3333;
 const TRANSPORT = process.env.TRANSPORT || 'stdio';
 const QUERY_RESULTS_PATH = process.env.QUERY_RESULTS_PATH || path.join(__dirname, 'query_results');
+const PING_INTERVAL = process.env.PING_INTERVAL || 60000; // Ping every 60 seconds by default
 
 // Create results directory if it doesn't exist
 if (!fs.existsSync(QUERY_RESULTS_PATH)) {
@@ -110,17 +111,17 @@ if (!server._tools) {
 }
 
 // Add a helper method to the server to execute tools directly
-server.executeToolCall = async function(toolName, args) {
+server.executeToolCall = async function (toolName, args) {
     // Find the tool in the registered tools
     logger.info(`Looking for tool: ${toolName}`);
     const tool = this._tools ? this._tools[toolName] : null;
-    
+
     if (!tool) {
         const availableTools = Object.keys(this._tools || {}).join(', ');
         logger.error(`Tool ${toolName} not found. Available tools: ${availableTools}`);
         throw new Error(`Tool ${toolName} not found. Available tools: ${availableTools.length > 100 ? availableTools.substring(0, 100) + '...' : availableTools}`);
     }
-    
+
     try {
         logger.info(`Executing tool ${toolName} directly with args: ${JSON.stringify(args)}`);
         const result = await tool.handler(args);
@@ -137,19 +138,19 @@ try {
     // Register database tools (execute-query, table-details, etc.)
     logger.info("Registering database tools...");
     registerDatabaseTools(server);
-    
+
     // Debug log of registered tools
     console.log("DEBUG: Tools after registration:");
     console.log(Object.keys(server._tools || {}));
-    
+
     // Register database resources (tables, schema, views, etc.)
     logger.info("Registering database resources...");
     registerDatabaseResources(server);
-    
+
     // Register prompts (generate-query, etc.)
     logger.info("Registering prompts...");
     registerPrompts(server);
-    
+
     // Debug log for tools
     const registeredTools = Object.keys(server._tools || {});
     logger.info(`Registered tools (${registeredTools.length}): ${registeredTools.join(', ')}`);
@@ -161,11 +162,12 @@ try {
 // Transport variables
 let currentTransport = null;
 let activeConnections = new Set();
+let pingIntervalId = null;
 
 // Add HTTP server status endpoint
 app.get('/', (req, res) => {
     const dbConfig = getDbConfig(true); // Get sanitized config (no password)
-    
+
     res.status(200).json({
         status: 'ok',
         message: 'MCP Server is running',
@@ -178,6 +180,10 @@ app.get('/', (req, res) => {
                 list: '/query-results',
                 detail: '/query-results/:uuid'
             }
+        },
+        connection_info: {
+            ping_interval_ms: PING_INTERVAL,
+            active_connections: activeConnections.size
         },
         database_info: {
             server: dbConfig.server,
@@ -193,7 +199,7 @@ app.get('/tools', (req, res) => {
     try {
         // Access tools directly from the server instance
         const tools = server._tools || {};
-        
+
         const toolList = Object.keys(tools).map(name => {
             return {
                 name,
@@ -201,10 +207,10 @@ app.get('/tools', (req, res) => {
                 source: 'internal'
             };
         });
-        
+
         logger.info(`Tool listing requested. Found ${toolList.length} tools.`);
         logger.info(`Tools from internal: ${Object.keys(tools).join(', ')}`);
-        
+
         res.status(200).json({
             count: toolList.length,
             tools: toolList,
@@ -225,7 +231,7 @@ app.get('/tools', (req, res) => {
 app.get('/diagnostic', async (req, res) => {
     try {
         const dbConfig = getDbConfig(true); // Get sanitized config (no password)
-        
+
         const diagnosticInfo = {
             status: 'ok',
             server: {
@@ -238,7 +244,9 @@ app.get('/diagnostic', async (req, res) => {
                 transport: TRANSPORT,
                 activeConnections: activeConnections.size,
                 hasCurrentTransport: currentTransport !== null,
-                version: server.options?.version || "1.1.0"
+                version: server.options?.version || "1.1.0",
+                pingIntervalMs: PING_INTERVAL,
+                pingActive: pingIntervalId !== null
             },
             database: {
                 server: dbConfig.server,
@@ -252,7 +260,7 @@ app.get('/diagnostic', async (req, res) => {
                 queryResults: `${req.protocol}://${req.get('host')}/query-results`
             }
         };
-        
+
         // Test database connection
         try {
             await executeQuery('SELECT 1 AS TestConnection');
@@ -261,7 +269,7 @@ app.get('/diagnostic', async (req, res) => {
             diagnosticInfo.database.connectionTest = 'failed';
             diagnosticInfo.database.connectionError = err.message;
         }
-        
+
         res.status(200).json(diagnosticInfo);
     } catch (error) {
         logger.error(`Diagnostic error: ${error.message}`);
@@ -361,58 +369,83 @@ const prevPage = await tool.call("mcp_paginated_query", {
 // SSE endpoint for client to connect
 app.get('/sse', async (req, res) => {
     logger.info('New SSE connection request received');
-    
+
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Prevents buffering in Nginx
-    
+
     try {
         // Create new SSE transport for this connection
         const messagesEndpoint = `/messages`;
         logger.info(`Creating SSE transport with messages endpoint: ${messagesEndpoint}`);
-        
+
         // Create the transport
         currentTransport = new SSEServerTransport(messagesEndpoint, res);
-        
+
         // Set up message handlers before connecting
-        currentTransport.onmessage = function(message) {
+        currentTransport.onmessage = function (message) {
             logger.info(`Transport received message: ${JSON.stringify(message)}`);
         };
-        
+
         // Error handler
-        currentTransport.onerror = function(error) {
+        currentTransport.onerror = function (error) {
             logger.error(`Transport error: ${error}`);
         };
-        
+
         // Close handler
-        currentTransport.onclose = function() {
+        currentTransport.onclose = function () {
             logger.info(`Transport closed`);
         };
-        
+
         // Connect the server to this transport
         await server.connect(currentTransport);
-        
+
         logger.info('SSE transport connected successfully');
-        
+
         // Add this connection to tracking
         activeConnections.add(res);
         logger.info(`Active SSE connections: ${activeConnections.size}`);
-        
+
+        // Clear any existing ping interval
+        if (pingIntervalId) {
+            clearInterval(pingIntervalId);
+        }
+
+        // Set up ping interval to keep connection alive
+        pingIntervalId = setInterval(() => {
+            if (res && !res.finished) {
+                logger.debug('Sending ping to client');
+                res.write('event: ping\n');
+                res.write(`data: ${Date.now()}\n\n`);
+            } else {
+                // Connection is closed, clear interval
+                clearInterval(pingIntervalId);
+                pingIntervalId = null;
+            }
+        }, PING_INTERVAL);
+
         // Handle client disconnect
         req.on('close', () => {
             logger.info('SSE client disconnected');
             activeConnections.delete(res);
             currentTransport = null;
+
+            // Clear ping interval when client disconnects
+            if (pingIntervalId) {
+                clearInterval(pingIntervalId);
+                pingIntervalId = null;
+            }
+
             logger.info(`Active SSE connections: ${activeConnections.size}`);
         });
-        
+
         // Send a welcome message after connection is established
         setTimeout(async () => {
             try {
                 if (!currentTransport) return;
-                
+
                 // Create a simple welcome notification
                 const welcomeMessage = {
                     jsonrpc: "2.0",
@@ -420,16 +453,16 @@ app.get('/sse', async (req, res) => {
                     params: {
                         type: "info",
                         message: `# Welcome to MSSQL MCP Server v${server.options?.version || "1.1.0"} 🚀\n\n` +
-                                 `To explore the database, use these commands:\n\n` +
-                                 `\`\`\`javascript\n` +
-                                 `mcp__discover_database()\n` +
-                                 `\`\`\``
+                            `To explore the database, use these commands:\n\n` +
+                            `\`\`\`javascript\n` +
+                            `mcp__discover_database()\n` +
+                            `\`\`\``
                     }
                 };
-                
+
                 currentTransport.send(welcomeMessage);
                 logger.info('Welcome message sent');
-                
+
                 // Try to get a sample table for additional guidance
                 try {
                     const tablesResult = await executeQuery(`
@@ -442,10 +475,10 @@ app.get('/sse', async (req, res) => {
                         ORDER BY 
                             TABLE_NAME
                     `);
-                    
+
                     if (tablesResult.recordset?.length > 0) {
                         const sampleTable = tablesResult.recordset[0].TABLE_NAME;
-                        
+
                         // Send additional examples
                         const examplesMessage = {
                             jsonrpc: "2.0",
@@ -453,17 +486,17 @@ app.get('/sse', async (req, res) => {
                             params: {
                                 type: "info",
                                 message: `## Example Commands\n\n` +
-                                         `Get table details:\n` +
-                                         `\`\`\`javascript\n` +
-                                         `mcp__table_details({ tableName: "${sampleTable}" })\n` +
-                                         `\`\`\`\n\n` +
-                                         `Execute a query:\n` +
-                                         `\`\`\`javascript\n` +
-                                         `mcp__execute_query({ sql: "SELECT TOP 10 * FROM ${sampleTable}" })\n` +
-                                         `\`\`\``
+                                    `Get table details:\n` +
+                                    `\`\`\`javascript\n` +
+                                    `mcp__table_details({ tableName: "${sampleTable}" })\n` +
+                                    `\`\`\`\n\n` +
+                                    `Execute a query:\n` +
+                                    `\`\`\`javascript\n` +
+                                    `mcp__execute_query({ sql: "SELECT TOP 10 * FROM ${sampleTable}" })\n` +
+                                    `\`\`\``
                             }
                         };
-                        
+
                         currentTransport.send(examplesMessage);
                     }
                 } catch (dbErr) {
@@ -484,7 +517,7 @@ app.get('/sse', async (req, res) => {
 // Messages endpoint for client to send messages
 app.post('/messages', (req, res) => {
     logger.info('Received message from client');
-    
+
     if (!currentTransport) {
         logger.error('No SSE transport available to process message');
         return res.status(503).json({
@@ -496,22 +529,22 @@ app.post('/messages', (req, res) => {
             }
         });
     }
-    
+
     try {
         // Extract the request ID for better debugging
         const requestId = req.body.id || "unknown";
         const method = req.body.method || "unknown";
-        
+
         logger.info(`Processing message ID: ${requestId}, method: ${method}`);
         logger.info(`Request body: ${JSON.stringify(req.body)}`);
-        
+
         // Special handling for cursor guide tool
-        if (method === 'tools/call' && 
-            (req.body.params?.name === 'mcp_cursor_guide' || 
-             req.body.params?.name === 'cursor_guide')) {
-            
+        if (method === 'tools/call' &&
+            (req.body.params?.name === 'mcp_cursor_guide' ||
+                req.body.params?.name === 'cursor_guide')) {
+
             logger.info('Direct handling for cursor guide tool');
-            
+
             // Comprehensive guide for cursor-based pagination
             const guideText = `
 # SQL Cursor-Based Pagination Guide
@@ -586,7 +619,7 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     text: guideText
                 }]
             };
-            
+
             // Don't send response via HTTP, just SSE which is what Claude expects
             // Also send via SSE for any listeners
             if (currentTransport) {
@@ -596,12 +629,12 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     id: requestId,
                     result: result
                 };
-                
+
                 // Write direct to the SSE connection with event: message format
                 if (currentTransport.res && !currentTransport.res.finished) {
                     currentTransport.res.write(`event: message\n`);
                     currentTransport.res.write(`data: ${JSON.stringify(sseResponse)}\n\n`);
-                    
+
                     // Send a success response to the HTTP POST
                     res.status(200).json({ success: true });
                 } else {
@@ -616,17 +649,17 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     result: result
                 });
             }
-            
+
             return;
         }
-        
+
         // Special handling for tool calls - properly send via SSE transport
         if (method === 'tools/call') {
             const toolName = req.body.params?.name;
             const toolArgs = req.body.params?.arguments || {};
-            
+
             logger.info(`Direct handling for tool call: ${toolName}`);
-            
+
             // Try to find the tool with various name patterns
             const possibleToolNames = [
                 toolName,                                   // Original name
@@ -635,9 +668,9 @@ const prevPage = await tool.call("mcp_paginated_query", {
                 toolName.replace('mcp_', 'mcp_SQL_'),       // Convert mcp_ to mcp_SQL_
                 toolName.replace('mcp_SQL_', 'mcp_')        // Convert mcp_SQL_ to mcp_
             ];
-            
+
             let foundToolName = null;
-            
+
             for (const name of possibleToolNames) {
                 if (server._tools && server._tools[name]) {
                     foundToolName = name;
@@ -645,13 +678,13 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     break;
                 }
             }
-            
+
             if (foundToolName) {
                 // Execute the tool and get result
                 server.executeToolCall(foundToolName, toolArgs)
                     .then(result => {
                         logger.info(`Direct tool result obtained successfully`);
-                        
+
                         // Send result via SSE transport
                         if (currentTransport && currentTransport.res && !currentTransport.res.finished) {
                             // Proper JSON-RPC formatting
@@ -660,11 +693,11 @@ const prevPage = await tool.call("mcp_paginated_query", {
                                 id: requestId,
                                 result: result
                             };
-                            
+
                             // Write directly to the SSE connection with event: message format
                             currentTransport.res.write(`event: message\n`);
                             currentTransport.res.write(`data: ${JSON.stringify(sseResponse)}\n\n`);
-                            
+
                             // Respond to HTTP request
                             res.status(200).json({ success: true });
                         } else {
@@ -678,7 +711,7 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     })
                     .catch(err => {
                         logger.error(`Error executing tool directly: ${err.message}`);
-                        
+
                         // Send error via SSE
                         if (currentTransport && currentTransport.res && !currentTransport.res.finished) {
                             const errorResponse = {
@@ -689,10 +722,10 @@ const prevPage = await tool.call("mcp_paginated_query", {
                                     message: `Error executing tool: ${err.message}`
                                 }
                             };
-                            
+
                             currentTransport.res.write(`event: message\n`);
                             currentTransport.res.write(`data: ${JSON.stringify(errorResponse)}\n\n`);
-                            
+
                             res.status(200).json({ success: true });
                         } else {
                             res.status(500).json({
@@ -705,13 +738,13 @@ const prevPage = await tool.call("mcp_paginated_query", {
                             });
                         }
                     });
-                
+
                 // Return early - response will be sent by the promise
                 return;
             } else {
                 logger.error(`Tool not found with any name variant: ${toolName}`);
                 logger.error(`Available tools: ${Object.keys(server._tools || {}).join(', ')}`);
-                
+
                 // Send error via SSE
                 if (currentTransport && currentTransport.res && !currentTransport.res.finished) {
                     const errorResponse = {
@@ -722,16 +755,16 @@ const prevPage = await tool.call("mcp_paginated_query", {
                             message: `Tool not found: ${toolName}`
                         }
                     };
-                    
+
                     currentTransport.res.write(`event: message\n`);
                     currentTransport.res.write(`data: ${JSON.stringify(errorResponse)}\n\n`);
-                    
+
                     res.status(200).json({ success: true });
                 } else {
                     return res.status(404).json({
-                jsonrpc: "2.0",
+                        jsonrpc: "2.0",
                         id: requestId,
-                error: {
+                        error: {
                             code: -32601,
                             message: `Tool not found: ${toolName}`
                         }
@@ -740,40 +773,40 @@ const prevPage = await tool.call("mcp_paginated_query", {
                 return;
             }
         }
-        
+
         // Special case for SSEServerTransport - monkey patch its send method to ensure correct format
         // This affects all other tool calls that go through the standard transport
         if (currentTransport && typeof currentTransport.send === 'function') {
             const originalSend = currentTransport.send;
-            currentTransport.send = function(message) {
+            currentTransport.send = function (message) {
                 logger.info(`Intercepting SSE transport send: ${JSON.stringify(message)}`);
-                
+
                 // Don't use the original send for JSON-RPC responses, write directly to the stream
                 if (message.jsonrpc === "2.0" && message.id && (message.result || message.error)) {
                     if (this.res && !this.res.finished) {
                         // Write the message with event: message format as per GitHub reference
                         this.res.write(`event: message\n`);
                         this.res.write(`data: ${JSON.stringify(message)}\n\n`);
-                        
+
                         // No need for separate completion event with this format
                         logger.info(`Sent message event for request ID: ${message.id}`);
                         return;
                     }
                 }
-                
+
                 // Fall back to original behavior for other messages
                 return originalSend.call(this, message);
             };
         }
-        
+
         // For standard message handling (non-tool calls or tools we couldn't handle directly)
         // Let the SSEServerTransport handle it with our monkey-patched send method
         currentTransport.handlePostMessage(req, res, req.body);
         logger.info(`Message processed via SSE transport for request ID: ${requestId}`);
-        
+
     } catch (error) {
         logger.error(`Error processing message: ${error.message}`);
-        
+
         // Send error via SSE if possible
         if (currentTransport && currentTransport.res && !currentTransport.res.finished) {
             const errorResponse = {
@@ -784,20 +817,20 @@ const prevPage = await tool.call("mcp_paginated_query", {
                     message: "Internal server error: " + error.message
                 }
             };
-            
+
             currentTransport.res.write(`event: message\n`);
             currentTransport.res.write(`data: ${JSON.stringify(errorResponse)}\n\n`);
-            
+
             res.status(200).json({ success: true });
         } else {
-        return res.status(500).json({
-            jsonrpc: "2.0",
-            id: req.body.id || null,
-            error: {
-                code: -32603,
-                message: "Internal server error: " + error.message
-            }
-        });
+            return res.status(500).json({
+                jsonrpc: "2.0",
+                id: req.body.id || null,
+                error: {
+                    code: -32603,
+                    message: "Internal server error: " + error.message
+                }
+            });
         }
     }
 });
@@ -808,7 +841,7 @@ app.get('/query-results', (req, res) => {
         if (!fs.existsSync(QUERY_RESULTS_PATH)) {
             return res.status(200).json({ results: [] });
         }
-        
+
         // Read all JSON files in the results directory
         const files = fs.readdirSync(QUERY_RESULTS_PATH)
             .filter(file => file.endsWith('.json'))
@@ -837,7 +870,7 @@ app.get('/query-results', (req, res) => {
                 if (!b.timestamp) return -1;
                 return new Date(b.timestamp) - new Date(a.timestamp);
             });
-        
+
         res.status(200).json({ results: files });
     } catch (err) {
         logger.error(`Error listing query results: ${err.message}`);
@@ -848,11 +881,11 @@ app.get('/query-results', (req, res) => {
 app.get('/query-results/:uuid', (req, res) => {
     const { uuid } = req.params;
     const filepath = path.join(QUERY_RESULTS_PATH, `${uuid}.json`);
-    
+
     if (!fs.existsSync(filepath)) {
         return res.status(404).json({ error: `Result with UUID ${uuid} not found` });
     }
-    
+
     try {
         const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
         res.status(200).json(data);
@@ -866,12 +899,12 @@ app.get('/query-results/:uuid', (req, res) => {
 app.get('/debug/register-cursor-guide', (req, res) => {
     try {
         logger.info('Manually registering cursor guide tool');
-        
+
         // Create cursor guide tool schema and handler
         const cursorGuideSchema = {
             random_string: z.string().optional().describe("Dummy parameter for no-parameter tools")
         };
-        
+
         const cursorGuideHandler = async (args) => {
             // Comprehensive guide for cursor-based pagination
             const guideText = `
@@ -951,13 +984,13 @@ const prevPage = await tool.call("mcp_paginated_query", {
 
         // Register with only mcp_ prefix for consistency
         server.tool("mcp_cursor_guide", cursorGuideSchema, cursorGuideHandler);
-        
+
         // Make sure these are directly accessible in _tools
         if (!server._tools) server._tools = {};
         server._tools["mcp_cursor_guide"] = { schema: cursorGuideSchema, handler: cursorGuideHandler };
-        
+
         const toolNames = Object.keys(server._tools || {});
-        
+
         res.status(200).json({
             success: true,
             message: 'Cursor guide tool manually registered',
@@ -977,7 +1010,7 @@ app.get('/debug-tools', (req, res) => {
     try {
         // Examine server._tools directly
         const toolKeys = Object.keys(server._tools || {});
-        
+
         // Build detailed response
         const toolDetails = {};
         for (const key of toolKeys) {
@@ -993,7 +1026,7 @@ app.get('/debug-tools', (req, res) => {
                 toolDetails[key] = { error: err.message };
             }
         }
-        
+
         res.status(200).json({
             toolCount: toolKeys.length,
             toolNames: toolKeys,
@@ -1013,13 +1046,13 @@ app.get('/debug/tools', (req, res) => {
     try {
         const allTools = server._tools || {};
         const toolNames = Object.keys(allTools);
-        
+
         // Group tools by their base name (without prefix)
         const toolsByBaseName = {};
-        
+
         toolNames.forEach(name => {
             let baseName = name;
-            
+
             // Remove known prefixes
             if (name.startsWith('mcp_SQL_')) {
                 baseName = name.substring(8);
@@ -1028,14 +1061,14 @@ app.get('/debug/tools', (req, res) => {
             } else if (name.startsWith('SQL_')) {
                 baseName = name.substring(4);
             }
-            
+
             if (!toolsByBaseName[baseName]) {
                 toolsByBaseName[baseName] = [];
             }
-            
+
             toolsByBaseName[baseName].push(name);
         });
-        
+
         res.status(200).json({
             totalTools: toolNames.length,
             toolNamesByGroup: toolsByBaseName,
@@ -1053,14 +1086,14 @@ app.get('/debug/tools', (req, res) => {
 async function startServer() {
     try {
         logger.info(`Starting MS SQL MCP Server v${server.options?.version || "1.1.0"}...`);
-        
+
         // Initialize database connection pool
         await initializeDbPool();
-        
+
         // Select transport based on configuration
         if (TRANSPORT === 'sse') {
             logger.info(`Setting up SSE transport on port ${PORT}`);
-            
+
             // Start HTTP server for SSE transport
             await new Promise((resolve, reject) => {
                 httpServer.listen(PORT, () => {
@@ -1069,30 +1102,37 @@ async function startServer() {
                     logger.info(`Messages endpoint: http://localhost:${PORT}/messages`);
                     resolve();
                 });
-                
+
                 httpServer.on('error', (error) => {
                     logger.error(`Failed to start HTTP server: ${error.message}`);
                     reject(error);
                 });
             });
-            
+
             logger.info('Waiting for SSE client connection...');
         } else if (TRANSPORT === 'stdio') {
             logger.info('Setting up STDIO transport');
-            
+
             // For stdio transport, we can set up and connect immediately
             const transport = new StdioServerTransport();
             await server.connect(transport);
-            
+
             logger.info('STDIO transport ready');
         } else {
             throw new Error(`Unsupported transport type: ${TRANSPORT}`);
         }
-        
+
         // Add graceful shutdown handler
         process.on('SIGINT', async () => {
             logger.info('Shutting down server gracefully...');
-            
+
+            // Clear ping interval if it exists
+            if (pingIntervalId) {
+                logger.info('Clearing ping interval');
+                clearInterval(pingIntervalId);
+                pingIntervalId = null;
+            }
+
             // Close active connections
             if (activeConnections.size > 0) {
                 logger.info(`Closing ${activeConnections.size} active SSE connections`);
@@ -1105,13 +1145,13 @@ async function startServer() {
                 }
                 activeConnections.clear();
             }
-            
+
             // Close HTTP server if it's running
             if (httpServer && httpServer.listening) {
                 logger.info('Closing HTTP server');
                 await new Promise(resolve => httpServer.close(resolve));
             }
-            
+
             // Close database pool
             try {
                 await sql.close();
@@ -1119,11 +1159,11 @@ async function startServer() {
             } catch (err) {
                 logger.error(`Error closing database connections: ${err.message}`);
             }
-            
+
             logger.info('Server shutdown complete');
             process.exit(0);
         });
-        
+
         logger.info('MCP Server startup complete');
     } catch (err) {
         logger.error(`Failed to start MCP server: ${err.message}`);
