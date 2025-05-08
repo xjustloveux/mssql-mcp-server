@@ -42,6 +42,7 @@ const __dirname = path.dirname(__filename);
 // Configuration
 const PORT = process.env.PORT || 3333;
 const TRANSPORT = process.env.TRANSPORT || 'stdio';
+const HOST = process.env.HOST || '0.0.0.0';
 const QUERY_RESULTS_PATH = process.env.QUERY_RESULTS_PATH || path.join(__dirname, 'query_results');
 const PING_INTERVAL = process.env.PING_INTERVAL || 60000; // Ping every 60 seconds by default
 
@@ -1096,10 +1097,10 @@ async function startServer() {
 
             // Start HTTP server for SSE transport
             await new Promise((resolve, reject) => {
-                httpServer.listen(PORT, () => {
-                    logger.info(`HTTP server listening on port ${PORT}`);
-                    logger.info(`SSE endpoint: http://localhost:${PORT}/sse`);
-                    logger.info(`Messages endpoint: http://localhost:${PORT}/messages`);
+                httpServer.listen(PORT, HOST, () => {
+                    logger.info(`HTTP server listening on port ${PORT} and host ${HOST}`);
+                    logger.info(`SSE endpoint: http://${HOST}:${PORT}/sse`);
+                    logger.info(`Messages endpoint: http://${HOST}:${PORT}/messages`);
                     resolve();
                 });
 

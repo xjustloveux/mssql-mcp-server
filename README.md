@@ -58,6 +58,7 @@ DB_PASSWORD=your_password
 DB_SERVER=your_server_name_or_ip
 DB_DATABASE=your_database_name
 PORT=3333
+HOST=0.0.0.0                    # Host for the server to listen on, e.g., 'localhost' or '0.0.0.0'
 TRANSPORT=stdio
 SERVER_URL=http://localhost:3333
 DEBUG=false                     # Set to 'true' for detailed logging (helpful for troubleshooting)
@@ -541,13 +542,14 @@ The `.env` file controls how the MS SQL MCP Server connects to your database and
 # Database Connection Settings
 DB_USER=your_username           # SQL Server username
 DB_PASSWORD=your_password       # SQL Server password
-DB_SERVER=your_server_name      # Server hostname or IP address (example: localhost, 10.0.0.1, myserver.database.windows.net)
-DB_DATABASE=your_database_name  # Name of the database to connect to
+DB_SERVER=your_server_name_or_ip
+DB_DATABASE=your_database_name
 
 # Server Configuration
 PORT=3333                       # Port for the HTTP/SSE server to listen on
+HOST=0.0.0.0                    # Host for the server to listen on, e.g., 'localhost' or '0.0.0.0'
 TRANSPORT=stdio                 # Connection method: 'stdio' (for Claude Desktop) or 'sse' (for network connections)
-SERVER_URL=http://localhost:3333 # Base URL when using SSE transport (must match your PORT setting)
+SERVER_URL=http://localhost:3333 # Base URL when using SSE transport. If HOST is '0.0.0.0', external clients use http://<your-machine-ip>:${PORT}
 
 # Advanced Settings
 DEBUG=false                     # Set to 'true' for detailed logging (helpful for troubleshooting)
