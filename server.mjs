@@ -1,5 +1,4 @@
 // server.js - Main MCP Server Implementation
-import dotenv from 'dotenv';
 import express from 'express';
 import bodyParser from 'body-parser';
 import sql from 'mssql';
@@ -15,6 +14,9 @@ import crypto from 'crypto';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+
+// Import centralized configuration
+import {initializeEnv, getServerConfig, getPathsConfig} from './Lib/config.mjs';
 
 // Import database utilities
 import { initializeDbPool, executeQuery, getDbConfig } from './Lib/database.mjs';
@@ -32,19 +34,21 @@ import { registerPrompts } from './Lib/prompts.mjs';
 import { logger } from './Lib/logger.mjs';
 import { getReadableErrorMessage, createJsonRpcError } from './Lib/errors.mjs';
 
-// Load environment variables
-dotenv.config();
+initializeEnv();
 
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuration
-const PORT = process.env.PORT || 3333;
-const TRANSPORT = process.env.TRANSPORT || 'stdio';
-const HOST = process.env.HOST || '0.0.0.0';
-const QUERY_RESULTS_PATH = process.env.QUERY_RESULTS_PATH || path.join(__dirname, 'query_results');
-const PING_INTERVAL = process.env.PING_INTERVAL || 60000; // Ping every 60 seconds by default
+// Configuration (from centralized config module)
+const serverConfig = getServerConfig();
+const pathsConfig = getPathsConfig(__dirname);
+
+const PORT = serverConfig.port;
+const TRANSPORT = serverConfig.transport;
+const HOST = serverConfig.host;
+const PING_INTERVAL = serverConfig.pingInterval;
+const QUERY_RESULTS_PATH = pathsConfig.queryResults;
 
 // Create results directory if it doesn't exist
 if (!fs.existsSync(QUERY_RESULTS_PATH)) {

@@ -1,29 +1,18 @@
 // lib/database.js - Database utilities
 import sql from 'mssql';
-import dotenv from 'dotenv';
 import { logger } from './logger.mjs';
+import { getDatabaseConfig } from './config.mjs';
 
-dotenv.config();
+// Database configuration (lazy loaded to ensure env vars are initialized first)
+let dbConfig = null;
 
-// Database configuration
-const dbConfig = {
-    user: process.env.DB_USER || 'sa',
-    password: process.env.DB_PASSWORD || 'YourStrong@Passw0rd',
-    server: process.env.DB_SERVER || 'localhost',
-    database: process.env.DB_DATABASE || 'master',
-    port: parseInt(process.env.DB_PORT) || 1433,
-    options: {
-        encrypt: process.env.DB_ENCRYPT === 'true', 
-        trustServerCertificate: process.env.DB_TRUST_SERVER_CERT !== 'false',
-        connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 15000,
-        requestTimeout: parseInt(process.env.DB_REQUEST_TIMEOUT) || 15000,
-        pool: {
-            max: parseInt(process.env.DB_POOL_MAX) || 10,
-            min: parseInt(process.env.DB_POOL_MIN) || 0,
-            idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT) || 30000
-        }
+// Get database config with lazy initialization
+function getDbConfigInternal() {
+    if (!dbConfig) {
+        dbConfig = getDatabaseConfig();
     }
-};
+    return dbConfig;
+}
 
 // Global SQL pool
 let sqlPool = null;
@@ -36,15 +25,18 @@ export async function initializeDbPool() {
     try {
         logger.info('Initializing SQL Server connection pool...');
         
+        // Get database config (lazy loaded)
+        const config = getDbConfigInternal();
+        
         // Create and connect the pool
-        sqlPool = await new sql.ConnectionPool(dbConfig).connect();
+        sqlPool = await new sql.ConnectionPool(config).connect();
         
         // Setup pool error handler
         sqlPool.on('error', err => {
             logger.error(`SQL Pool Error: ${err.message}`);
         });
         
-        logger.info(`SQL Server connection pool initialized successfully (${dbConfig.server}/${dbConfig.database})`);
+        logger.info(`SQL Server connection pool initialized successfully (${config.server}/${config.database})`);
         return true;
     } catch (err) {
         logger.error(`Failed to initialize SQL Server connection pool: ${err.message}`);
@@ -229,7 +221,8 @@ export function sanitizeSqlIdentifier(identifier) {
  * @returns {object} - Database configuration
  */
 export function getDbConfig(maskPassword = false) {
-    const config = { ...dbConfig };
+    // Get database config (lazy loaded)
+    const config = { ...getDbConfigInternal() };
     
     if (maskPassword) {
         config.password = '********';
