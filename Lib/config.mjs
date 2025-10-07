@@ -8,7 +8,7 @@ import {logger} from './logger.mjs';
  * Supports loading different .env files based on environment parameter
  * @returns {string} - The loaded env file path
  */
-export function initializeEnv() {
+export function initializeEnv(rootDir) {
     const args = process.argv.slice(2);
     let envFile = '.env'; // 預設使用設定
 
@@ -21,7 +21,7 @@ export function initializeEnv() {
     }
 
     // Load environment variables
-    const result = dotenv.config({path: envFile});
+    const result = dotenv.config({path: path.resolve(rootDir, envFile)});
 
     if (result.error) {
         logger.warn(`Warning: Could not load ${envFile}, falling back to default environment variables`);

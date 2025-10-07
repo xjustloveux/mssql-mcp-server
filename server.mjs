@@ -34,11 +34,11 @@ import { registerPrompts } from './Lib/prompts.mjs';
 import { logger } from './Lib/logger.mjs';
 import { getReadableErrorMessage, createJsonRpcError } from './Lib/errors.mjs';
 
-initializeEnv();
-
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+initializeEnv(__dirname);
 
 // Configuration (from centralized config module)
 const serverConfig = getServerConfig();
